@@ -1,3 +1,39 @@
+# Flatland
+
+Current state of implementation:
+
+ * Run `python conflict_avoiding_agents.py` to run the hand-crafted approach
+      * Hand-crafted approach lets agents go only if no other agents traverse the same path in opposite direction.
+ * Run `python train_policy.py` to train or execute models. There are several CLI-arguments:
+
+```
+  --train
+      Runs a training session (default)
+  --run
+      Runs a testing session
+  --epochs
+      Number of epochs to train the model
+  --checkpoint
+      The path to a previously trained model or to a new checkpoint under wich 
+      the model will be saved after training.
+  --data_path
+      Acquirering a dataset takes simulating a lot of episodes which takes time.
+      If data_path is given, the script will save a dataset once it is acquired 
+      and if the script is rerun will load it automatically.
+  --batches_per_epoch
+      Number of batches of an epoch.
+  --batch_size
+      The number of samples in each batch.
+  --max_agents
+      The maximal number of agents that spawn in the environment.
+```
+ * A simple training run could look like this:
+   * `python train_policy.py --train --data_path flatland_data.npy --checkpoint ckpts/baseline_model`
+   * This run will persist the dataset in the file `flatland_data.npy` and create a model checkpoint in `ckpts/baseline_model`
+ * Following this training, the model can be tested via `python train_policy.py --run --checkpoint ckpts/baseline_model`
+
+***
+
 ![](https://images.aicrowd.com/raw_images/challenges/banner_file/895/d16b2933c93aa14f8eae.jpg)
 
 This is the starter kit for the [Flatland 3 Challenge](https://www.aicrowd.com/challenges/flatland-3) hosted on [AIcrowd](https://www.aicrowd.com). Clone the repository to compete now!

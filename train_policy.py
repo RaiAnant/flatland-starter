@@ -148,16 +148,24 @@ def cached_generator(n_samples, max_agents, data_path=None):
 
     return data_generator
 
-def build_model(n_timesteps, n_features):
+def build_model(n_timesteps, n_features, ckpt=None):
     observation_input = tf.keras.layers.Input(shape=(n_timesteps, n_features))
 
+    # Either handle temporal data via GRU
     x = tf.keras.layers.GRU(16, use_bias=False)(observation_input)
-
+    # Or handle it by squashing the temporal axis and apply MLP
     #x = tf.keras.layers.GlobalMaxPooling1D()(observation_input)
+
     x = tf.keras.layers.Dense(32, activation='relu')(x)
     x = tf.keras.layers.Dense(32, activation='relu')(x)
     output = tf.keras.layers.Dense(1, activation='sigmoid')(x)
     model =  tf.keras.Model(inputs=[observation_input], outputs=[output])
+
+    if ckpt is not None:
+        checkpoint = tf.train.Checkpoint(net=model)
+        checkpoint.restore(tf.train.latest_checkpoint(ckpt))
+        print('Restored checkpoint')
+
     return model
 
 def build_dataset(batch_size, batches_per_epoch, max_agents, data_path=None):
@@ -172,9 +180,8 @@ def build_dataset(batch_size, batches_per_epoch, max_agents, data_path=None):
     dataset = dataset.map(lambda obs, agent_done, n_agents, n_timesteps: (obs, agent_done))
     return dataset.batch(batch_size, drop_remainder=True).prefetch(2)
 
-
-def train_discriminator(dataset, epochs):
-    model = build_model(MAX_TIME, N_FEATURES)
+def train_discriminator(dataset, epochs, ckpt=None):
+    model = build_model(MAX_TIME, N_FEATURES, ckpt=ckpt)
     optimizer = tf.keras.optimizers.Adam()
     model.compile(optimizer, 
         loss=tf.keras.losses.binary_crossentropy, 
@@ -182,18 +189,16 @@ def train_discriminator(dataset, epochs):
     model.fit(dataset, epochs=epochs)
     checkpoint = tf.train.Checkpoint(net=model, optimizer=optimizer)
 
-    if not os.path.isdir('ckpts'):
-        os.mkdir('ckpts')
+    if ckpt is None:
+        ckpt = 'ckpts/model_5_epochs'
+    if not os.path.isdir(os.path.dirname(ckpt)):
+        os.makedirs(os.path.dirname(ckpt))
 
-    ckpt_manager = tf.train.CheckpointManager(checkpoint, 'ckpts/model_5_epochs', max_to_keep=3)
+    ckpt_manager = tf.train.CheckpointManager(checkpoint, ckpt, max_to_keep=3)
     print(ckpt_manager.save())
 
 def run_discriminator(max_agents, ckpt=None):
-    model = build_model(MAX_TIME, N_FEATURES)
-    if ckpt is not None:
-        checkpoint = tf.train.Checkpoint(net=model)
-        checkpoint.restore(tf.train.latest_checkpoint(ckpt))
-        print('Restored checkpoint')
+    model = build_model(MAX_TIME, N_FEATURES, ckpt=ckpt)
     run_episode(first_obs=False, model=model, render=True, max_agents=max_agents)
 
 # predict outcome if the agent goes 
@@ -228,11 +233,11 @@ if __name__ == '__main__':
     if config['run']:
         run_discriminator(
             config['max_agents'], 
-            config['checkpoint'])
+            ckpt=config['checkpoint'])
     else:
         dataset = build_dataset(
             config['batch_size'], 
             config['batches_per_epoch'], 
             config['max_agents'], 
             data_path=config['data_path'])
-        train_discriminator(dataset, config['epochs'])
+        train_discriminator(dataset, config['epochs'], ckpt=config['checkpoint'])
