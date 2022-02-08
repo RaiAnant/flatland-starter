@@ -14,10 +14,10 @@ Current state of implementation:
   --epochs
       Number of epochs to train the model
   --checkpoint
-      The path to a previously trained model or to a new checkpoint under wich 
+      The path to a previously trained model or to a new checkpoint under which 
       the model will be saved after training.
   --data_path
-      Acquirering a dataset takes simulating a lot of episodes which takes time.
+      Acquiring a dataset takes simulating a lot of episodes which takes time.
       If data_path is given, the script will save a dataset once it is acquired 
       and if the script is rerun will load it automatically.
   --batches_per_epoch
